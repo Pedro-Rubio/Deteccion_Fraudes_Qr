@@ -5,6 +5,7 @@ import joblib
 import json
 import os
 from io import StringIO
+import requests # ¡Importante añadir esta librería!
 
 # --- Configuración de la Página ---
 st.set_page_config(
@@ -32,6 +33,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# --- URLs de los Artefactos ---
+# Se recomienda guardar estas URLs como secretos en Streamlit Cloud
+MODEL_URL = "https://drive.google.com/uc?export=download&id=11BhOTvi6K6Mwgorzxb6y57AIWi4kW7fF"
+MODEL_LOCAL_PATH = "modelo.pkl"
+THRESHOLDS_LOCAL_PATH = "thresholds_RandomForest.json" # Asumimos que este archivo es pequeño y está en el repo
+
 # --- Título ---
 st.title("🛡️ Fraud Sentinel — QR Payment Scoring")
 st.markdown("Carga un archivo CSV con transacciones QR y obtén un score de fraude + política de triage.")
@@ -44,22 +51,36 @@ c_fn = st.sidebar.slider("Costo de Falso Negativo (fraude perdido)", 100, 10000,
 # --- Cargar Modelo y Thresholds ---
 @st.cache_resource
 def load_model_and_thresholds():
+    """
+    Descarga el modelo desde una URL si no existe localmente,
+    luego lo carga en memoria junto con los umbrales.
+    """
     try:
-        # ✅ Nombre corregido: modelo.pkl
-        pipeline = joblib.load("app/modelo.pkl")
+        # Descargar el modelo si no existe localmente
+        if not os.path.exists(MODEL_LOCAL_PATH):
+            st.info("📥 Descargando el modelo, por favor espera... (esto solo se hace una vez)")
+            r = requests.get(MODEL_URL, allow_redirects=True)
+            r.raise_for_status()  # Lanza un error si la descarga falla
+            with open(MODEL_LOCAL_PATH, "wb") as f:
+                f.write(r.content)
+            st.success("✅ ¡Modelo descargado con éxito!")
+
+        # Cargar el pipeline del modelo
+        pipeline = joblib.load(MODEL_LOCAL_PATH)
         
-        # ✅ Nombre corregido: thresholds_RandomForest.json
-        with open("thresholds_RandomForest.json", "r") as f:
+        # Cargar los umbrales (desde el archivo local en el repo)
+        with open(THRESHOLDS_LOCAL_PATH, "r") as f:
             thresholds = json.load(f)
         
         optimal_threshold = thresholds.get("optimal_threshold", 0.5)
         return pipeline, optimal_threshold
+
     except FileNotFoundError as e:
         st.error(f"❌ Archivo no encontrado: {str(e)}")
-        st.info("💡 Asegúrate de que 'modelo.pkl' y 'thresholds_RandomForest.json' estén en la carpeta /app")
+        st.info("💡 Asegúrate de que 'thresholds_RandomForest.json' esté en la raíz del repositorio.")
         return None, 0.5
     except Exception as e:
-        st.error(f"❌ Error al cargar modelo: {str(e)}")
+        st.error(f"❌ Error al cargar los artefactos: {str(e)}")
         return None, 0.5
 
 pipeline, optimal_threshold = load_model_and_thresholds()
