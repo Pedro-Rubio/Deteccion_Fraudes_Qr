@@ -5,7 +5,9 @@ import joblib
 import json
 import os
 from io import StringIO
-import requests # ¡Importante añadir esta librería!
+import requests
+import matplotlib.pyplot as plt
+from sklearn.metrics import average_precision_score, precision_recall_curve, classification_report, confusion_matrix
 
 # --- Configuración de la Página ---
 st.set_page_config(
@@ -33,10 +35,10 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- URLs de los Artefactos ---
-# Se recomienda guardar estas URLs como secretos en Streamlit Cloud
-MODEL_URL = "https://drive.google.com/uc?export=download&id=11BhOTvi6K6Mwgorzxb6y57AIWi4kW7fF"
-THRESHOLDS_URL = "https://drive.google.com/uc?export=download&id=1NoBcABkU0Dyf18O1njartMmJNUiHCVyV" 
+# --- URLs de los Artefactos (leídos desde Streamlit Secrets) ---
+# ¡IMPORTANTE! Debes configurar estos secretos en el dashboard de tu app en Streamlit Cloud.
+MODEL_URL = st.secrets.get("MODEL_URL", "")
+THRESHOLDS_URL = st.secrets.get("THRESHOLDS_URL", "")
 
 MODEL_LOCAL_PATH = "modelo.pkl"
 THRESHOLDS_LOCAL_PATH = "thresholds_RandomForest.json"
@@ -54,16 +56,15 @@ c_fn = st.sidebar.slider("Costo de Falso Negativo (fraude perdido)", 100, 10000,
 def download_file(url, local_filename, file_description):
     """Descarga un archivo desde una URL si no existe localmente."""
     if not os.path.exists(local_filename):
-        st.info(f"📥 Descargando {file_description}, por favor espera...")
-        try:
-            r = requests.get(url, allow_redirects=True, timeout=60) # Añadido timeout
-            r.raise_for_status()
-            with open(local_filename, "wb") as f:
-                f.write(r.content)
-            st.success(f"✅ ¡{file_description} descargado con éxito!")
-        except requests.exceptions.RequestException as e:
-            st.error(f"❌ Error al descargar {file_description}: {e}")
-            st.stop()
+        with st.spinner(f"Descargando {file_description}... (esto solo se hace una vez)"):
+            try:
+                r = requests.get(url, allow_redirects=True, timeout=60)
+                r.raise_for_status()
+                with open(local_filename, "wb") as f:
+                    f.write(r.content)
+            except requests.exceptions.RequestException as e:
+                st.error(f"❌ Error al descargar {file_description}: {e}")
+                st.stop()
 
 # --- Cargar Modelo y Thresholds ---
 @st.cache_resource
@@ -72,6 +73,10 @@ def load_model_and_thresholds():
     Descarga el modelo y los umbrales desde sus URLs si no existen localmente,
     luego los carga en memoria.
     """
+    if not MODEL_URL or not THRESHOLDS_URL:
+        st.error("❌ Faltan las URLs de los artefactos en los 'Secrets' de Streamlit. Por favor, configúralos.")
+        st.stop()
+        
     download_file(MODEL_URL, MODEL_LOCAL_PATH, "el modelo")
     download_file(THRESHOLDS_URL, THRESHOLDS_LOCAL_PATH, "los umbrales")
     
@@ -163,15 +168,12 @@ if uploaded_file is not None:
         
         # Si tiene etiquetas reales, mostrar métricas
         if 'is_fraud' in df.columns:
-            from sklearn.metrics import average_precision_score, precision_recall_curve
-            import matplotlib.pyplot as plt
-            
             st.subheader("📈 Métricas de Desempeño (si se proporcionó is_fraud)")
             pr_auc = average_precision_score(df['is_fraud'], df['fraud_score'])
             st.metric("PR AUC", f"{pr_auc:.4f}")
             
             # Curva PR
-            precision, recall, thresholds_pr = precision_recall_curve(df['is_fraud'], df['fraud_score'])
+            precision, recall, _ = precision_recall_curve(df['is_fraud'], df['fraud_score'])
             fig, ax = plt.subplots(figsize=(8, 6))
             ax.plot(recall, precision, label=f'PR Curve (AUC = {pr_auc:.4f})')
             ax.set_xlabel('Recall')
