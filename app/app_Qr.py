@@ -36,8 +36,10 @@ st.markdown("""
 # --- URLs de los Artefactos ---
 # Se recomienda guardar estas URLs como secretos en Streamlit Cloud
 MODEL_URL = "https://drive.google.com/uc?export=download&id=11BhOTvi6K6Mwgorzxb6y57AIWi4kW7fF"
+THRESHOLDS_URL = "https://drive.google.com/uc?export=download&id=1NoBcABkU0Dyf18O1njartMmJNUiHCVyV" 
+
 MODEL_LOCAL_PATH = "modelo.pkl"
-THRESHOLDS_LOCAL_PATH = "thresholds_RandomForest.json" # Asumimos que este archivo es pequeño y está en el repo
+THRESHOLDS_LOCAL_PATH = "thresholds_RandomForest.json"
 
 # --- Título ---
 st.title("🛡️ Fraud Sentinel — QR Payment Scoring")
@@ -48,39 +50,40 @@ st.sidebar.header("⚙️ Configuración de Triage")
 c_fp = st.sidebar.slider("Costo de Falso Positivo (investigación)", 1, 100, 10)
 c_fn = st.sidebar.slider("Costo de Falso Negativo (fraude perdido)", 100, 10000, 500)
 
+# --- Función para descargar archivos ---
+def download_file(url, local_filename, file_description):
+    """Descarga un archivo desde una URL si no existe localmente."""
+    if not os.path.exists(local_filename):
+        st.info(f"📥 Descargando {file_description}, por favor espera...")
+        try:
+            r = requests.get(url, allow_redirects=True, timeout=60) # Añadido timeout
+            r.raise_for_status()
+            with open(local_filename, "wb") as f:
+                f.write(r.content)
+            st.success(f"✅ ¡{file_description} descargado con éxito!")
+        except requests.exceptions.RequestException as e:
+            st.error(f"❌ Error al descargar {file_description}: {e}")
+            st.stop()
+
 # --- Cargar Modelo y Thresholds ---
 @st.cache_resource
 def load_model_and_thresholds():
     """
-    Descarga el modelo desde una URL si no existe localmente,
-    luego lo carga en memoria junto con los umbrales.
+    Descarga el modelo y los umbrales desde sus URLs si no existen localmente,
+    luego los carga en memoria.
     """
+    download_file(MODEL_URL, MODEL_LOCAL_PATH, "el modelo")
+    download_file(THRESHOLDS_URL, THRESHOLDS_LOCAL_PATH, "los umbrales")
+    
     try:
-        # Descargar el modelo si no existe localmente
-        if not os.path.exists(MODEL_LOCAL_PATH):
-            st.info("📥 Descargando el modelo, por favor espera... (esto solo se hace una vez)")
-            r = requests.get(MODEL_URL, allow_redirects=True)
-            r.raise_for_status()  # Lanza un error si la descarga falla
-            with open(MODEL_LOCAL_PATH, "wb") as f:
-                f.write(r.content)
-            st.success("✅ ¡Modelo descargado con éxito!")
-
-        # Cargar el pipeline del modelo
         pipeline = joblib.load(MODEL_LOCAL_PATH)
-        
-        # Cargar los umbrales (desde el archivo local en el repo)
         with open(THRESHOLDS_LOCAL_PATH, "r") as f:
             thresholds = json.load(f)
         
         optimal_threshold = thresholds.get("optimal_threshold", 0.5)
         return pipeline, optimal_threshold
-
-    except FileNotFoundError as e:
-        st.error(f"❌ Archivo no encontrado: {str(e)}")
-        st.info("💡 Asegúrate de que 'thresholds_RandomForest.json' esté en la raíz del repositorio.")
-        return None, 0.5
     except Exception as e:
-        st.error(f"❌ Error al cargar los artefactos: {str(e)}")
+        st.error(f"❌ Error al cargar los artefactos locales: {str(e)}")
         return None, 0.5
 
 pipeline, optimal_threshold = load_model_and_thresholds()
