@@ -1,2 +1,5 @@
 app/model.pkl filter=lfs diff=lfs merge=lfs -text
 app/thresholds_RandomForest.json filter=lfs diff=lfs merge=lfs -text
+app/app_Qr.py filter=lfs diff=lfs merge=lfs -text
+app/requirements.txt filter=lfs diff=lfs merge=lfs -text
+app/[[:space:]].gitattributes.txt filter=lfs diff=lfs merge=lfs -text
