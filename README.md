@@ -126,3 +126,12 @@ Los pagos con QR están creciendo rápidamente en América Latina y Asia, pero t
 
 Este proyecto es parte de mi portfolio en **fraude y riesgo financiero**.  
 Comentarios y sugerencias son bienvenidos vía issues o PRs.  
+
+## 👤 Autor
+
+**Pedro Rubio** — Machine Learning Engenieer 
+
+- App Streamlit *https://deteccionfraudesqr-rif5f8gnfhmduf6rm9eyqp.streamlit.app/*, BI con Tableau/Power BI.
+- Drive/Model, Artifacts: *https://colab.research.google.com/drive/1_Ed65bITdC714VqEDTFk9ouYxYGiwDoL?usp=sharing*
+- Databricks/Notebook & Artefactos *https://dbc-d087d100-620e.cloud.databricks.com/browse/folders/2447160281203034?o=2884050240173164*
+- Contacto: *srdelosdatos@gmail.com* — *www.linkedin.com/in/srdelosdatos* — 
