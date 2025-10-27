@@ -53,19 +53,6 @@ Los pagos con QR están creciendo rápidamente en América Latina y Asia, pero t
 
 ---
 
-## 📂 Estructura del Repositorio  
-
-```
-/infra        -> Terraform / IaC para Unity Catalog, Jobs, Warehouse
-/notebooks    -> Bronze/Silver/Gold + features + training + batch_scoring
-/sql          -> DDLs, vistas para BI (dash.*), pruebas de calidad
-/app          -> Streamlit (scoring + triage)
-/data         -> Generador de datos sintéticos + muestras CSV
-/docs         -> README, data contracts, arquitectura, runbook
-/tests        -> Unit tests PySpark/SQL/ML con pytest
-```
-
----
 
 ## 🔬 Modelos y Métricas  
 
