@@ -116,7 +116,7 @@ Comentarios y sugerencias son bienvenidos vía issues o PRs.
 
 ## 👤 Autor
 
-**Pedro Rubio** — Machine Learning Engenieer 
+**Pedro Rubio** 
 
 - App Streamlit *https://deteccionfraudesqr-rif5f8gnfhmduf6rm9eyqp.streamlit.app/*, BI con Tableau/Power BI.
 - Drive/Model, Artifacts: *https://colab.research.google.com/drive/1_Ed65bITdC714VqEDTFk9ouYxYGiwDoL?usp=sharing*
